@@ -1,7 +1,7 @@
 {
   "name": "github-labeler",
-  "version": "1.0.0",
-  "description": "A micro github webhook endpoint to auto-label new PRs on submission",
+  "version": "1.0.1",
+  "description": "A micro github webhook endpoint to auto-label new PRs.",
   "main": "github-labeler.js",
   "dependencies": {
     "axios": "^0.19.2",

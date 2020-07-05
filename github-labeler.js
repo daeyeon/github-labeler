@@ -1,5 +1,5 @@
 const express = require('express');
-const request = require('axios');
+const axios = require('axios');
 const fs = require('fs');
 
 const GithubWebHook = require('express-github-webhook');
@@ -20,58 +20,50 @@ try {
   process.exit(1);
 }
 
-const repos = env.GITHUB_REPOS || [];
-const labels = {
-  pr: env.GITHUB_PR_LABELS || [],
-  issue: env.GITHUB_ISSUE_LABELS || [],
-};
+const labels = env.PR_LABELS || [];
+const accessToken = env.TOKEN;
+const port = env.PORT || 5696;
+const hooker = GithubWebHook({
+  path: env.PATH || '/',
+  secret: env.SECRET,
+});
 
 debug.agent(`label rules: ${JSON.stringify(labels)}`);
 
-const accessToken = env.GITHUB_TOKEN;
-const hooker = GithubWebHook({
-  path: env.WEBHOOK_PATH || '/',
-  secret: env.GITHUB_SECRET || '',
-});
-
 const app = express();
-app.set('port', env.PORT || 5696);
 app.use(express.json()); // body-parser
 app.use(hooker);
 
 // https://docs.github.com/en/developers/webhooks-and-events/webhook-events-and-payloads#pull_request
 hooker.on('pull_request', (repo, data) => {
-  if (
-    repos.indexOf(repo) < 0 ||
-    data.action !== 'opened' ||
-    labels.pr.length === 0
-  ) {
+  if (data.action !== 'opened') {
     return;
   }
 
   const pr = data.pull_request;
-
-  debug.agent(`incoming webhook. (${repo}:${pr.base.ref}#${pr.number})`);
-
-  const found = labels.pr.find(
+  const found = labels.find(
     (item) => item.base == '*' || item.base == pr.base.ref,
   );
 
-  if (!found) return;
+  debug.agent(`incoming webhook. (${repo}:${pr.base.ref}#${pr.number})`);
+
+  if (!found) {
+    return;
+  }
 
   // https://docs.github.com/en/rest/reference/issues#add-labels-to-an-issue
-  let opts = {
+  let config = {
     method: 'POST',
     url: `${pr.issue_url}/labels`,
     headers: {
       'User-Agent': 'github-labeler',
-      Authorization: `token ${accessToken}`,
       'Content-Type': 'application/json',
+      Authorization: `token ${accessToken}`,
     },
     data: JSON.stringify(found.label),
   };
 
-  request(opts)
+  axios(config)
     .then((response) => {
       debug.remote(`adding label response ${JSON.stringify(response.data)}`);
     })
@@ -80,10 +72,10 @@ hooker.on('pull_request', (repo, data) => {
     });
 });
 
-hooker.on('error', (error) => {
-  console.error('Error:', error);
+hooker.on('error', (err, req, res) => {
+  console.error('Error:', err);
 });
 
-app.listen(app.get('port'), () => {
-  debug.agent(`listening on port ${app.get('port')}`);
+app.listen(port, () => {
+  debug.agent(`listening on port ${port}`);
 });

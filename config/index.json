@@ -1,12 +1,10 @@
 {
-  "GITHUB_REPOS": [""],
-  "GITHUB_PR_LABELS": [
+  "PR_LABELS": [
     {
       "base": "",
       "label": [""]
     }
   ],
-  "GITHUB_TOKEN": "",
-  "GITHUB_SECRET": "",
-  "PORT": 5696
+  "SECRET": "",
+  "TOKEN": ""
 }
